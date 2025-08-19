@@ -1,54 +1,54 @@
 // DOM Content Loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener("DOMContentLoaded", function() {
     // Mobile Navigation Toggle
-    const hamburger = document.querySelector('.hamburger');
-    const navMenu = document.querySelector('.nav-menu');
+    const hamburger = document.querySelector(".hamburger");
+    const navMenu = document.querySelector(".nav-menu");
     
     if (hamburger && navMenu) {
-        hamburger.addEventListener('click', function() {
-            hamburger.classList.toggle('active');
-            navMenu.classList.toggle('active');
+        hamburger.addEventListener("click", function() {
+            hamburger.classList.toggle("active");
+            navMenu.classList.toggle("active");
         });
     }
 
     // Smooth Scrolling for Navigation Links
-    document.querySelectorAll('a[href^="#"]').forEach(link => {
-        link.addEventListener('click', function(e) {
+    document.querySelectorAll("a[href^=\"#\"]").forEach(link => {
+        link.addEventListener("click", function(e) {
             e.preventDefault();
-            const targetId = this.getAttribute('href');
+            const targetId = this.getAttribute("href");
             const targetSection = document.querySelector(targetId);
             
             if (targetSection) {
-                const headerHeight = document.querySelector('.header').offsetHeight;
+                const headerHeight = document.querySelector(".header").offsetHeight;
                 const targetPosition = targetSection.offsetTop - headerHeight;
                 
                 window.scrollTo({
                     top: targetPosition,
-                    behavior: 'smooth'
+                    behavior: "smooth"
                 });
                 
-                if (navMenu.classList.contains('active')) {
-                    hamburger.classList.remove('active');
-                    navMenu.classList.remove('active');
+                if (navMenu.classList.contains("active")) {
+                    hamburger.classList.remove("active");
+                    navMenu.classList.remove("active");
                 }
             }
         });
     });
 
     // Header Background on Scroll
-    const header = document.querySelector('.header');
-    window.addEventListener('scroll', () => {
+    const header = document.querySelector(".header");
+    window.addEventListener("scroll", () => {
         if (window.scrollY > 50) {
-            header.classList.add('scrolled');
+            header.classList.add("scrolled");
         } else {
-            header.classList.remove('scrolled');
+            header.classList.remove("scrolled");
         }
     });
 
     // CTA Button Interactions to open Modal
-    const ctaButtons = document.querySelectorAll('.cta-button, .quote-cta');
+    const ctaButtons = document.querySelectorAll(".cta-button, .quote-cta");
     ctaButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
+        button.addEventListener("click", (e) => {
             e.preventDefault();
             showContactModal();
         });
@@ -58,29 +58,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Função para fechar o modal
     function closeModal() {
-        const modal = document.getElementById('contactModal');
+        const modal = document.getElementById("contactModal");
         if (modal) {
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
+            modal.style.display = "none";
+            document.body.style.overflow = "auto";
         }
     }
     
     // Função para mostrar o modal
     function showContactModal() {
-        let modal = document.getElementById('contactModal');
+        let modal = document.getElementById("contactModal");
         if (!modal) {
             modal = createContactModal();
             document.body.appendChild(modal);
         }
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        modal.style.display = "flex";
+        document.body.style.overflow = "hidden";
     }
 
     // Função para criar a estrutura HTML do modal dinamicamente
     function createContactModal() {
-        const modal = document.createElement('div');
-        modal.id = 'contactModal';
-        // O formulário abaixo já está configurado para o Formspree. Lembre-se de colocar sua URL no 'action'.
+        const modal = document.createElement("div");
+        modal.id = "contactModal";
+        // O formulário abaixo já está configurado para o Formspree. Lembre-se de colocar sua URL no "action".
         modal.innerHTML = `
             <div class="modal-overlay">
                 <div class="modal-content">
@@ -127,8 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        // Adiciona os estilos do modal (seu CSS original era injetado aqui, vamos manter essa boa prática)
-        const modalStyles = document.createElement('style');
+        // Adiciona os estilos do modal (seu CSS original era injetado aqui, vamos manter essa boa prática )
+        const modalStyles = document.createElement("style");
         modalStyles.textContent = `
             #contactModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; align-items: center; justify-content: center; }
             .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; padding: 1rem; }
@@ -149,11 +149,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(modalStyles);
         
         // Adiciona os eventos para fechar o modal e submeter o formulário
-        modal.querySelector('.modal-close').addEventListener('click', closeModal);
-        modal.querySelector('.modal-overlay').addEventListener('click', (e) => {
+        modal.querySelector(".modal-close").addEventListener("click", closeModal);
+        modal.querySelector(".modal-overlay").addEventListener("click", (e) => {
             if (e.target === e.currentTarget) closeModal();
         });
-        modal.querySelector('.contact-form').addEventListener('submit', handleFormSubmit);
+        modal.querySelector(".contact-form").addEventListener("submit", handleFormSubmit);
         
         return modal;
     }
@@ -162,62 +162,100 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleFormSubmit(event) {
         event.preventDefault();
         const form = event.target;
-        const submitButton = form.querySelector('button[type="submit"]');
-        const statusElement = form.querySelector('.form-status');
+        const submitButton = form.querySelector("button[type=\"submit\"]");
+        const statusElement = form.querySelector(".form-status");
         const originalButtonText = submitButton.textContent;
 
         const formData = new FormData(form);
 
         submitButton.disabled = true;
-        submitButton.textContent = 'Enviando...';
-        if (statusElement) statusElement.textContent = '';
+        submitButton.textContent = "Enviando...";
+        if (statusElement) statusElement.textContent = "";
 
         try {
             const response = await fetch(form.action, {
                 method: form.method,
                 body: formData,
-                headers: { 'Accept': 'application/json' }
+                headers: { "Accept": "application/json" }
             });
 
             if (response.ok) {
-                if (statusElement) statusElement.textContent = 'Mensagem enviada com sucesso!';
-                else alert('Mensagem enviada com sucesso!');
+                if (statusElement) statusElement.textContent = "Mensagem enviada com sucesso!";
+                else alert("Mensagem enviada com sucesso!");
                 form.reset();
                 setTimeout(() => {
                     closeModal(); // Fecha o modal se for o formulário do modal
                 }, 2000);
             } else {
                 const data = await response.json();
-                if (Object.hasOwn(data, 'errors')) {
+                if (Object.hasOwn(data, "errors")) {
                     const errorMessage = data["errors"].map(error => error["message"]).join(", ");
                      if (statusElement) statusElement.textContent = `Erro: ${errorMessage}`;
                      else alert(`Erro: ${errorMessage}`);
                 } else {
-                    throw new Error('Ocorreu um erro no servidor.');
+                    throw new Error("Ocorreu um erro no servidor.");
                 }
             }
         } catch (error) {
-            console.error('Erro de submissão:', error);
-            if (statusElement) statusElement.textContent = 'Ocorreu um erro ao enviar. Tente novamente.';
-            else alert('Ocorreu um erro ao enviar. Tente novamente.');
+            console.error("Erro de submissão:", error);
+            if (statusElement) statusElement.textContent = "Ocorreu um erro ao enviar. Tente novamente.";
+            else alert("Ocorreu um erro ao enviar. Tente novamente.");
         } finally {
             setTimeout(() => {
                 submitButton.disabled = false;
                 submitButton.textContent = originalButtonText;
-                if (statusElement) statusElement.textContent = '';
+                if (statusElement) statusElement.textContent = "";
             }, 3000);
         }
     }
 
     // Adiciona o listener para o formulário principal na seção de contato
-    const mainContactForm = document.querySelector('.main-contact-form');
+    const mainContactForm = document.querySelector(".main-contact-form");
     if (mainContactForm) {
         // Adiciona um elemento para status no formulário principal também
-        const statusP = document.createElement('p');
-        statusP.className = 'form-status';
+        const statusP = document.createElement("p");
+        statusP.className = "form-status";
         mainContactForm.appendChild(statusP);
         
-        mainContactForm.addEventListener('submit', handleFormSubmit);
+        mainContactForm.addEventListener("submit", handleFormSubmit);
+    }
+    
+    // Numbers Counter Animation
+    function animateCounters() {
+        const counters = document.querySelectorAll(".number-value");
+        
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute("data-target"));
+            const increment = target / 100;
+            let current = 0;
+            
+            const updateCounter = () => {
+                if (current < target) {
+                    current += increment;
+                    counter.textContent = Math.ceil(current);
+                    setTimeout(updateCounter, 20);
+                } else {
+                    counter.textContent = target;
+                }
+            };
+            
+            updateCounter();
+        });
+    }
+
+    // Intersection Observer for Numbers Section
+    const numbersSection = document.querySelector(".numbers");
+    if (numbersSection) {
+        const numbersObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounters();
+                    numbersObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        numbersObserver.observe(numbersSection);
     }
     
     // Animações e outros scripts que você já tinha...
