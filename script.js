@@ -253,7 +253,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     numbersObserver.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.5 });
+        }, { threshold: 0.1 });
         
         numbersObserver.observe(numbersSection);
     }
