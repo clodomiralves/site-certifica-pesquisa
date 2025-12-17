@@ -1,6 +1,5 @@
-// DOM Content Loaded
 document.addEventListener("DOMContentLoaded", function() {
-    // Mobile Navigation Toggle
+    // --- 1. MENU E NAVEGAÇÃO (Mantido igual) ---
     const hamburger = document.querySelector(".hamburger");
     const navMenu = document.querySelector(".nav-menu");
     
@@ -11,7 +10,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Smooth Scrolling for Navigation Links
     document.querySelectorAll("a[href^=\"#\"]").forEach(link => {
         link.addEventListener("click", function(e) {
             e.preventDefault();
@@ -35,7 +33,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Header Background on Scroll
     const header = document.querySelector(".header");
     window.addEventListener("scroll", () => {
         if (window.scrollY > 50) {
@@ -45,7 +42,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // CTA Button Interactions to open Modal
+    // --- 2. MODAL E LÓGICA DO WHATSAPP (Alterado) ---
+
+    // Botões que abrem o modal
     const ctaButtons = document.querySelectorAll(".cta-button, .quote-cta");
     ctaButtons.forEach(button => {
         button.addEventListener("click", (e) => {
@@ -54,9 +53,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // --- LOGICA DO FORMULÁRIO COM FORMSPREE ---
-
-    // Função para fechar o modal
     function closeModal() {
         const modal = document.getElementById("contactModal");
         if (modal) {
@@ -65,7 +61,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
     
-    // Função para mostrar o modal
     function showContactModal() {
         let modal = document.getElementById("contactModal");
         if (!modal) {
@@ -76,11 +71,11 @@ document.addEventListener("DOMContentLoaded", function() {
         document.body.style.overflow = "hidden";
     }
 
-    // Função para criar a estrutura HTML do modal dinamicamente
+    // Cria o HTML do Modal
     function createContactModal() {
         const modal = document.createElement("div");
         modal.id = "contactModal";
-        // O formulário abaixo já está configurado para o Formspree. Lembre-se de colocar sua URL no "action".
+        // REMOVIDO: action e method do form, pois usaremos JS puro
         modal.innerHTML = `
             <div class="modal-overlay">
                 <div class="modal-content">
@@ -88,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         <h2>Solicitar Proposta Gratuita</h2>
                         <button class="modal-close">&times;</button>
                     </div>
-                    <form action="https://formspree.io/f/xvgqaypg" method="POST" class="contact-form">
+                    <form class="contact-form whatsapp-form">
                         <div class="form-group">
                             <label for="modal-name">Nome Completo</label>
                             <input type="text" id="modal-name" name="Nome" required>
@@ -121,13 +116,14 @@ document.addEventListener("DOMContentLoaded", function() {
                             <label for="modal-message">Mensagem</label>
                             <textarea id="modal-message" name="Mensagem" rows="4" placeholder="Descreva brevemente seu projeto ou necessidade..."></textarea>
                         </div>
-                        <button type="submit" class="submit-btn">Enviar Solicitação</button>
-                        <p class="form-status"></p> </form>
+                        <button type="submit" class="submit-btn">
+                            <i class="fab fa-whatsapp"></i> Enviar via WhatsApp
+                        </button>
+                    </form>
                 </div>
             </div>
         `;
         
-        // Adiciona os estilos do modal (seu CSS original era injetado aqui, vamos manter essa boa prática )
         const modalStyles = document.createElement("style");
         modalStyles.textContent = `
             #contactModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; align-items: center; justify-content: center; }
@@ -141,94 +137,73 @@ document.addEventListener("DOMContentLoaded", function() {
             .form-group { margin-bottom: 1.25rem; }
             .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; }
             .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
-            .submit-btn { width: 100%; background: #2563eb; color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
-            .submit-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
-            .submit-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
-            .form-status { margin-top: 1rem; text-align: center; }
+            .submit-btn { width: 100%; background: #25D366; color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px;}
+            .submit-btn:hover { background: #128C7E; transform: translateY(-2px); }
         `;
         document.head.appendChild(modalStyles);
         
-        // Adiciona os eventos para fechar o modal e submeter o formulário
         modal.querySelector(".modal-close").addEventListener("click", closeModal);
         modal.querySelector(".modal-overlay").addEventListener("click", (e) => {
             if (e.target === e.currentTarget) closeModal();
         });
-        modal.querySelector(".contact-form").addEventListener("submit", handleFormSubmit);
+        
+        // Adiciona o evento de envio para o WhatsApp
+        modal.querySelector(".contact-form").addEventListener("submit", handleWhatsappSubmit);
         
         return modal;
     }
 
-    // Função unificada para lidar com a submissão de AMBOS os formulários
-    async function handleFormSubmit(event) {
-        event.preventDefault();
+    // --- NOVA FUNÇÃO DE ENVIO PARA WHATSAPP ---
+function handleWhatsappSubmit(event) {
+        event.preventDefault(); // Impede recarregamento da página
         const form = event.target;
-        const submitButton = form.querySelector("button[type=\"submit\"]");
-        const statusElement = form.querySelector(".form-status");
-        const originalButtonText = submitButton.textContent;
+        
+        // Captura os dados
+        const nome = form.querySelector('[name="Nome"]').value;
+        const email = form.querySelector('[name="E-mail"]').value;
+        const telefone = form.querySelector('[name="Telefone"]').value; 
+        const empresa = form.querySelector('[name="Empresa/Organização"]').value;
+        const servico = form.querySelector('[name="Tipo de Serviço"]').value;
+        const mensagem = form.querySelector('[name="Mensagem"]').value;
 
-        const formData = new FormData(form);
+        // Número da empresa
+        const numeroDestino = "5583988537311";
 
-        submitButton.disabled = true;
-        submitButton.textContent = "Enviando...";
-        if (statusElement) statusElement.textContent = "";
+        // CORREÇÃO AQUI: Trocamos %0A por \n
+        let texto = `*NOVO CONTATO VIA SITE*\n\n` +
+                    `*Nome:* ${nome}\n` +
+                    `*Email:* ${email}\n` +
+                    `*Telefone:* ${telefone}\n` +
+                    `*Empresa:* ${empresa}\n` +
+                    `*Interesse:* ${servico}\n` +
+                    `*Mensagem:* ${mensagem}`;
 
-        try {
-            const response = await fetch(form.action, {
-                method: form.method,
-                body: formData,
-                headers: { "Accept": "application/json" }
-            });
+        // Cria o link
+        const url = `https://api.whatsapp.com/send?phone=${numeroDestino}&text=${encodeURIComponent(texto)}`;
 
-            if (response.ok) {
-                if (statusElement) statusElement.textContent = "Mensagem enviada com sucesso!";
-                else alert("Mensagem enviada com sucesso!");
-                form.reset();
-                setTimeout(() => {
-                    closeModal(); // Fecha o modal se for o formulário do modal
-                }, 2000);
-            } else {
-                const data = await response.json();
-                if (Object.hasOwn(data, "errors")) {
-                    const errorMessage = data["errors"].map(error => error["message"]).join(", ");
-                     if (statusElement) statusElement.textContent = `Erro: ${errorMessage}`;
-                     else alert(`Erro: ${errorMessage}`);
-                } else {
-                    throw new Error("Ocorreu um erro no servidor.");
-                }
-            }
-        } catch (error) {
-            console.error("Erro de submissão:", error);
-            if (statusElement) statusElement.textContent = "Ocorreu um erro ao enviar. Tente novamente.";
-            else alert("Ocorreu um erro ao enviar. Tente novamente.");
-        } finally {
-            setTimeout(() => {
-                submitButton.disabled = false;
-                submitButton.textContent = originalButtonText;
-                if (statusElement) statusElement.textContent = "";
-            }, 3000);
+        // Abre o WhatsApp
+        window.open(url, '_blank');
+
+        // Limpa o formulário e fecha o modal se necessário
+        form.reset();
+        if(form.closest('#contactModal')) {
+            closeModal();
         }
     }
 
-    // Adiciona o listener para o formulário principal na seção de contato
+    // Configura o formulário PRINCIPAL (do rodapé) para usar a mesma função
     const mainContactForm = document.querySelector(".main-contact-form");
     if (mainContactForm) {
-        // Adiciona um elemento para status no formulário principal também
-        const statusP = document.createElement("p");
-        statusP.className = "form-status";
-        mainContactForm.appendChild(statusP);
-        
-        mainContactForm.addEventListener("submit", handleFormSubmit);
+        mainContactForm.addEventListener("submit", handleWhatsappSubmit);
     }
     
-    // Numbers Counter Animation
+    // --- 3. ANIMAÇÕES E CONTADORES (Mantido igual) ---
     function animateCounters() {
         const counters = document.querySelectorAll(".number-value");
-        
         counters.forEach(counter => {
             const target = parseInt(counter.getAttribute("data-target"));
             const increment = target / 100;
             let current = 0;
-            
             const updateCounter = () => {
                 if (current < target) {
                     current += increment;
@@ -238,12 +213,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     counter.textContent = target;
                 }
             };
-            
             updateCounter();
         });
     }
 
-    // Intersection Observer for Numbers Section
     const numbersSection = document.querySelector(".numbers");
     if (numbersSection) {
         const numbersObserver = new IntersectionObserver((entries) => {
@@ -254,10 +227,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             });
         }, { threshold: 0.1 });
-        
         numbersObserver.observe(numbersSection);
     }
-    
-    // Animações e outros scripts que você já tinha...
-    // (O restante do seu script original pode vir aqui, como animações de scroll, etc.)
 });
