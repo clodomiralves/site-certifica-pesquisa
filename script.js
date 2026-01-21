@@ -153,49 +153,83 @@ document.addEventListener("DOMContentLoaded", function() {
         return modal;
     }
 
-    // --- NOVA FUNÇÃO DE ENVIO PARA WHATSAPP ---
+// --- FUNÇÃO ATUALIZADA: WHATSAPP + INTEGRAÇÃO MAKE ---
 function handleWhatsappSubmit(event) {
-        event.preventDefault(); // Impede recarregamento da página
-        const form = event.target;
-        
-        // Captura os dados
-        const nome = form.querySelector('[name="Nome"]').value;
-        const email = form.querySelector('[name="E-mail"]').value;
-        const telefone = form.querySelector('[name="Telefone"]').value; 
-        const empresa = form.querySelector('[name="Empresa/Organização"]').value;
-        const servico = form.querySelector('[name="Tipo de Serviço"]').value;
-        const mensagem = form.querySelector('[name="Mensagem"]').value;
+    event.preventDefault(); // Impede recarregamento da página
+    const form = event.target;
+    
+    // 1. Captura os dados do formulário
+    const nome = form.querySelector('[name="Nome"]').value;
+    const email = form.querySelector('[name="E-mail"]').value;
+    const telefone = form.querySelector('[name="Telefone"]').value; 
+    const empresa = form.querySelector('[name="Empresa/Organização"]').value;
+    const servico = form.querySelector('[name="Tipo de Serviço"]').value;
+    const mensagem = form.querySelector('[name="Mensagem"]').value;
 
-        // Número da empresa
-        const numeroDestino = "5583988537311";
+    // 2. Prepara os dados para enviar ao Make (Webhook)
+    const dadosParaPlanilha = {
+        nome: nome,
+        email: email,
+        telefone: telefone,
+        empresa: empresa,
+        servico: servico,
+        mensagem: mensagem,
+        data_envio: new Date().toLocaleString('pt-BR') // Adiciona data/hora
+    };
 
-        // CORREÇÃO AQUI: Trocamos %0A por \n
-        let texto = `*NOVO CONTATO VIA SITE*\n\n` +
-                    `*Nome:* ${nome}\n` +
-                    `*Email:* ${email}\n` +
-                    `*Telefone:* ${telefone}\n` +
-                    `*Empresa:* ${empresa}\n` +
-                    `*Interesse:* ${servico}\n` +
-                    `*Mensagem:* ${mensagem}`;
+    // 3. Envia os dados para o Webhook do Make
+    // O link fornecido é usado aqui
+    const webhookUrl = "https://hook.us1.make.celonis.com/1j3mrdwfk8ilrqfl5ibpwwriqbhlh31h";
 
-        // Cria o link
-        const url = `https://api.whatsapp.com/send?phone=${numeroDestino}&text=${encodeURIComponent(texto)}`;
-
-        // Abre o WhatsApp
-        window.open(url, '_blank');
-
-        // Limpa o formulário e fecha o modal se necessário
-        form.reset();
-        if(form.closest('#contactModal')) {
-            closeModal();
+    fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(dadosParaPlanilha)
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log("Sucesso: Dados enviados para o Google Sheets/Make.");
+        } else {
+            console.error("Erro: O Make rejeitou os dados.", response.statusText);
         }
-    }
+    })
+    .catch(error => {
+        console.error("Erro de rede ao conectar com o Make:", error);
+    });
 
-    // Configura o formulário PRINCIPAL (do rodapé) para usar a mesma função
-    const mainContactForm = document.querySelector(".main-contact-form");
-    if (mainContactForm) {
-        mainContactForm.addEventListener("submit", handleWhatsappSubmit);
+    // 4. Lógica original do WhatsApp (Mantida para o usuário iniciar a conversa)
+    const numeroDestino = "5583988537311";
+
+    // Trocamos %0A por \n para melhor formatação
+    let textoZap = `*NOVO CONTATO VIA SITE*\n\n` +
+                `*Nome:* ${nome}\n` +
+                `*Email:* ${email}\n` +
+                `*Telefone:* ${telefone}\n` +
+                `*Empresa:* ${empresa}\n` +
+                `*Interesse:* ${servico}\n` +
+                `*Mensagem:* ${mensagem}`;
+
+    // Cria o link do WhatsApp
+    const urlZap = `https://api.whatsapp.com/send?phone=${numeroDestino}&text=${encodeURIComponent(textoZap)}`;
+
+    // Abre o WhatsApp em uma nova aba
+    window.open(urlZap, '_blank');
+
+    // 5. Limpa o formulário e fecha o modal se necessário
+    form.reset();
+    
+    // Verifica se a função closeModal existe no escopo antes de chamar
+    // (Como está dentro do DOMContentLoaded junto com a definição, deve funcionar)
+    if(form.closest('#contactModal') && typeof closeModal === 'function') {
+        closeModal();
+    } else if (form.closest('#contactModal')) {
+        // Fallback caso closeModal não esteja acessível diretamente aqui
+        document.getElementById("contactModal").style.display = "none";
+        document.body.style.overflow = "auto";
     }
+}
     
     // --- 3. ANIMAÇÕES E CONTADORES (Mantido igual) ---
     function animateCounters() {
