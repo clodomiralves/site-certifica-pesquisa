@@ -1,266 +1,145 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // --- 1. MENU E NAVEGAÇÃO (Mantido igual) ---
+    
+    // --- 1. MENU MOBILE (Toggle) ---
     const hamburger = document.querySelector(".hamburger");
     const navMenu = document.querySelector(".nav-menu");
-    
-    if (hamburger && navMenu) {
-        hamburger.addEventListener("click", function() {
+    const navLinks = document.querySelectorAll(".nav-menu a");
+
+    if (hamburger) {
+        hamburger.addEventListener("click", () => {
             hamburger.classList.toggle("active");
             navMenu.classList.toggle("active");
         });
     }
 
-    document.querySelectorAll("a[href^=\"#\"]").forEach(link => {
-        link.addEventListener("click", function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute("href");
-            const targetSection = document.querySelector(targetId);
-            
-            if (targetSection) {
-                const headerHeight = document.querySelector(".header").offsetHeight;
-                const targetPosition = targetSection.offsetTop - headerHeight;
-                
-                window.scrollTo({
-                    top: targetPosition,
-                    behavior: "smooth"
-                });
-                
-                if (navMenu.classList.contains("active")) {
-                    hamburger.classList.remove("active");
-                    navMenu.classList.remove("active");
-                }
+    // Fechar menu ao clicar em link
+    navLinks.forEach(link => {
+        link.addEventListener("click", () => {
+            hamburger.classList.remove("active");
+            navMenu.classList.remove("active");
+        });
+    });
+
+    // --- 2. MODAL & WHATSAPP (Lógica Centralizada) ---
+    const modal = document.getElementById("contactModal");
+    const openBtns = document.querySelectorAll(".js-open-modal");
+    const closeBtn = document.querySelector(".modal-close");
+    const overlay = document.querySelector(".modal-overlay");
+
+    // Função para abrir
+    function openModal() {
+        if (modal) {
+            modal.style.display = "flex";
+            // Pequeno delay para permitir transição CSS
+            setTimeout(() => modal.classList.add("active"), 10);
+            document.body.style.overflow = "hidden"; // Trava scroll
+        }
+    }
+
+    // Função para fechar
+    function closeModal() {
+        if (modal) {
+            modal.classList.remove("active");
+            setTimeout(() => {
+                modal.style.display = "none";
+                document.body.style.overflow = "auto";
+            }, 300);
+        }
+    }
+
+    // Listeners
+    openBtns.forEach(btn => btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openModal();
+    }));
+
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (overlay) overlay.addEventListener("click", closeModal);
+
+    // --- 3. ENVIO DE FORMULÁRIO (WHATSAPP + MAKE) ---
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const submitBtn = form.querySelector("button[type='submit']");
+        
+        // Dados
+        const data = {
+            nome: form.querySelector("[name='Nome']").value,
+            telefone: form.querySelector("[name='Telefone']").value, // Campo unificado no JS
+            email: form.querySelector("[name='Email']") ? form.querySelector("[name='Email']").value : "Não informado",
+            servico: form.querySelector("[name='Servico']").value,
+            mensagem: form.querySelector("[name='Mensagem']") ? form.querySelector("[name='Mensagem']").value : ""
+        };
+
+        // Feedback visual
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "Enviando...";
+        submitBtn.disabled = true;
+
+        // 1. Webhook Make (Fire & Forget)
+        fetch("https://hook.us1.make.celonis.com/1j3mrdwfk8ilrqfl5ibpwwriqbhlh31h", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...data, date: new Date().toISOString() })
+        }).catch(e => console.log("Webhook error (ignorable):", e));
+
+        // 2. WhatsApp Redirect
+        const text = `*NOVO LEAD DO SITE*\n\n👤 *Nome:* ${data.nome}\n📱 *Tel:* ${data.telefone}\n📧 *Email:* ${data.email}\n🎯 *Interesse:* ${data.servico}\n💬 *Msg:* ${data.mensagem}`;
+        const phone = "5583988537311";
+        
+        setTimeout(() => {
+            window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+            form.reset();
+            closeModal();
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }, 1000);
+    }
+
+    // Attach submit listeners
+    const mainForm = document.getElementById("mainContactForm");
+    const modalForm = document.getElementById("modalForm");
+
+    if (mainForm) mainForm.addEventListener("submit", handleFormSubmit);
+    if (modalForm) modalForm.addEventListener("submit", handleFormSubmit);
+
+    // --- 4. SCROLL ANIMATIONS (Intersection Observer) ---
+    const revealElements = document.querySelectorAll(".reveal");
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add("active");
+                revealObserver.unobserve(entry.target); // Anima só uma vez
             }
         });
-    });
+    }, { threshold: 0.15 });
 
-    const header = document.querySelector(".header");
-    window.addEventListener("scroll", () => {
-        if (window.scrollY > 50) {
-            header.classList.add("scrolled");
-        } else {
-            header.classList.remove("scrolled");
-        }
-    });
+    revealElements.forEach(el => revealObserver.observe(el));
 
-    // --- 2. MODAL E LÓGICA DO WHATSAPP (Alterado) ---
-
-    // Botões que abrem o modal
-    const ctaButtons = document.querySelectorAll(".cta-button, .quote-cta");
-    ctaButtons.forEach(button => {
-        button.addEventListener("click", (e) => {
-            e.preventDefault();
-            showContactModal();
-        });
-    });
-
-    function closeModal() {
-        const modal = document.getElementById("contactModal");
-        if (modal) {
-            modal.style.display = "none";
-            document.body.style.overflow = "auto";
-        }
-    }
-    
-    function showContactModal() {
-        let modal = document.getElementById("contactModal");
-        if (!modal) {
-            modal = createContactModal();
-            document.body.appendChild(modal);
-        }
-        modal.style.display = "flex";
-        document.body.style.overflow = "hidden";
-    }
-
-    // Cria o HTML do Modal
-    function createContactModal() {
-        const modal = document.createElement("div");
-        modal.id = "contactModal";
-        // REMOVIDO: action e method do form, pois usaremos JS puro
-        modal.innerHTML = `
-            <div class="modal-overlay">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>Solicitar Proposta Gratuita</h2>
-                        <button class="modal-close">&times;</button>
-                    </div>
-                    <form class="contact-form whatsapp-form">
-                        <div class="form-group">
-                            <label for="modal-name">Nome Completo</label>
-                            <input type="text" id="modal-name" name="Nome" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="modal-email">E-mail</label>
-                            <input type="email" id="modal-email" name="E-mail" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="modal-phone">Telefone</label>
-                            <input type="tel" id="modal-phone" name="Telefone" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="modal-company">Empresa/Organização</label>
-                            <input type="text" id="modal-company" name="Empresa/Organização">
-                        </div>
-                        <div class="form-group">
-                            <label for="modal-service">Tipo de Serviço</label>
-                            <select id="modal-service" name="Tipo de Serviço" required>
-                                <option value="">Selecione um serviço</option>
-                                <option value="Pesquisa Eleitoral">Pesquisa Eleitoral</option>
-                                <option value="Pesquisa Digital">Pesquisa Digital</option>
-                                <option value="Rastreamento Eleitoral">Rastreamento Eleitoral</option>
-                                <option value="Pesquisa de Mercado">Pesquisa de Mercado</option>
-                                <option value="Opinião Pública">Opinião Pública</option>
-                                <option value="Consultoria Estratégica">Consultoria Estratégica</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="modal-message">Mensagem</label>
-                            <textarea id="modal-message" name="Mensagem" rows="4" placeholder="Descreva brevemente seu projeto ou necessidade..."></textarea>
-                        </div>
-                        <button type="submit" class="submit-btn">
-                            <i class="fab fa-whatsapp"></i> Enviar via WhatsApp
-                        </button>
-                    </form>
-                </div>
-            </div>
-        `;
-        
-        const modalStyles = document.createElement("style");
-        modalStyles.textContent = `
-            #contactModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; align-items: center; justify-content: center; }
-            .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; padding: 1rem; }
-            .modal-content { background: #fff; border-radius: 12px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; animation: slide-up 0.4s ease-out; }
-            @keyframes slide-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-            .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; border-bottom: 1px solid #e5e7eb; }
-            .modal-header h2 { color: #1e3a8a; margin: 0; font-size: 1.5rem; }
-            .modal-close { background: none; border: none; font-size: 2rem; cursor: pointer; color: #64748b; }
-            .contact-form { padding: 1rem 2rem 2rem; }
-            .form-group { margin-bottom: 1.25rem; }
-            .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; }
-            .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
-            .submit-btn { width: 100%; background: #25D366; color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px;}
-            .submit-btn:hover { background: #128C7E; transform: translateY(-2px); }
-        `;
-        document.head.appendChild(modalStyles);
-        
-        modal.querySelector(".modal-close").addEventListener("click", closeModal);
-        modal.querySelector(".modal-overlay").addEventListener("click", (e) => {
-            if (e.target === e.currentTarget) closeModal();
-        });
-        
-        // Adiciona o evento de envio para o WhatsApp
-        modal.querySelector(".contact-form").addEventListener("submit", handleWhatsappSubmit);
-        
-        return modal;
-    }
-
-// --- FUNÇÃO ATUALIZADA: WHATSAPP + INTEGRAÇÃO MAKE ---
-function handleWhatsappSubmit(event) {
-    event.preventDefault(); // Impede recarregamento da página
-    const form = event.target;
-    
-    // 1. Captura os dados do formulário
-    const nome = form.querySelector('[name="Nome"]').value;
-    const email = form.querySelector('[name="E-mail"]').value;
-    const telefone = form.querySelector('[name="Telefone"]').value; 
-    const empresa = form.querySelector('[name="Empresa/Organização"]').value;
-    const servico = form.querySelector('[name="Tipo de Serviço"]').value;
-    const mensagem = form.querySelector('[name="Mensagem"]').value;
-
-    // 2. Prepara os dados para enviar ao Make (Webhook)
-    const dadosParaPlanilha = {
-        nome: nome,
-        email: email,
-        telefone: telefone,
-        empresa: empresa,
-        servico: servico,
-        mensagem: mensagem,
-        data_envio: new Date().toLocaleString('pt-BR') // Adiciona data/hora
-    };
-
-    // 3. Envia os dados para o Webhook do Make
-    // O link fornecido é usado aqui
-    const webhookUrl = "https://hook.us1.make.celonis.com/1j3mrdwfk8ilrqfl5ibpwwriqbhlh31h";
-
-    fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(dadosParaPlanilha)
-    })
-    .then(response => {
-        if (response.ok) {
-            console.log("Sucesso: Dados enviados para o Google Sheets/Make.");
-        } else {
-            console.error("Erro: O Make rejeitou os dados.", response.statusText);
-        }
-    })
-    .catch(error => {
-        console.error("Erro de rede ao conectar com o Make:", error);
-    });
-
-    // 4. Lógica original do WhatsApp (Mantida para o usuário iniciar a conversa)
-    const numeroDestino = "5583988537311";
-
-    // Trocamos %0A por \n para melhor formatação
-    let textoZap = `*NOVO CONTATO VIA SITE*\n\n` +
-                `*Nome:* ${nome}\n` +
-                `*Email:* ${email}\n` +
-                `*Telefone:* ${telefone}\n` +
-                `*Empresa:* ${empresa}\n` +
-                `*Interesse:* ${servico}\n` +
-                `*Mensagem:* ${mensagem}`;
-
-    // Cria o link do WhatsApp
-    const urlZap = `https://api.whatsapp.com/send?phone=${numeroDestino}&text=${encodeURIComponent(textoZap)}`;
-
-    // Abre o WhatsApp em uma nova aba
-    window.open(urlZap, '_blank');
-
-    // 5. Limpa o formulário e fecha o modal se necessário
-    form.reset();
-    
-    // Verifica se a função closeModal existe no escopo antes de chamar
-    // (Como está dentro do DOMContentLoaded junto com a definição, deve funcionar)
-    if(form.closest('#contactModal') && typeof closeModal === 'function') {
-        closeModal();
-    } else if (form.closest('#contactModal')) {
-        // Fallback caso closeModal não esteja acessível diretamente aqui
-        document.getElementById("contactModal").style.display = "none";
-        document.body.style.overflow = "auto";
-    }
-}
-    
-    // --- 3. ANIMAÇÕES E CONTADORES (Mantido igual) ---
-    function animateCounters() {
-        const counters = document.querySelectorAll(".number-value");
-        counters.forEach(counter => {
-            const target = parseInt(counter.getAttribute("data-target"));
-            const increment = target / 100;
-            let current = 0;
-            const updateCounter = () => {
-                if (current < target) {
-                    current += increment;
-                    counter.textContent = Math.ceil(current);
-                    setTimeout(updateCounter, 20);
-                } else {
-                    counter.textContent = target;
-                }
-            };
-            updateCounter();
-        });
-    }
-
+    // --- 5. NUMBERS COUNTER ---
     const numbersSection = document.querySelector(".numbers");
     if (numbersSection) {
-        const numbersObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    animateCounters();
-                    numbersObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.1 });
-        numbersObserver.observe(numbersSection);
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                document.querySelectorAll(".number-value").forEach(counter => {
+                    const target = +counter.getAttribute("data-target");
+                    const duration = 2000;
+                    const step = target / (duration / 16);
+                    let current = 0;
+                    const update = () => {
+                        current += step;
+                        if (current < target) {
+                            counter.innerText = Math.ceil(current);
+                            requestAnimationFrame(update);
+                        } else {
+                            counter.innerText = target;
+                        }
+                    };
+                    update();
+                });
+                observer.disconnect();
+            }
+        });
+        observer.observe(numbersSection);
     }
 });
